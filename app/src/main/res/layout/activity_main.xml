@@ -9,6 +9,10 @@
     <com.sample.progressview.ProgressView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        app:fromProgress="1"
+        app:toProgress="1"
+        app:startProgress="1"
+        app:colorProgress="@color/black"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
