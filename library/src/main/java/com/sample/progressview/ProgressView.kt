@@ -19,24 +19,29 @@ class ProgressView : View {
 
     private val particles = Cycloid()
 
-    constructor(context: Context) : super(context)
+    constructor(context: Context) : this(context, null)
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
+
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : this(context, attrs, defStyleAttr, 0)
+
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes) {
         attrs?.let { context.obtainStyledAttributes(attrs, R.styleable.ProgressView) }
-             ?.let {
+            ?.let {
                 particles.from = it.getInt(R.styleable.ProgressView_fromProgress, PROGRESS_FROM)
                 particles.to = it.getInt(R.styleable.ProgressView_toProgress, PROGRESS_TO)
                 particles.start = it.getInt(R.styleable.ProgressView_startProgress, PROGRESS_START)
                 particles.color = it.getInt(R.styleable.ProgressView_colorProgress, PROGRESS_COLOR)
-             }
+            }
     }
 
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes)
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        particles.onSizeChanged(w, h)
+    }
 
     override fun onDraw(canvas: Canvas?) {
         canvas?.let {
-            particles.width = width
-            particles.height = height
             particles.onDraw(it)
 //            invalidate()
             postInvalidateDelayed(10)

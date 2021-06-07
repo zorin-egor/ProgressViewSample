@@ -31,15 +31,12 @@ class Cycloid : Draw {
 
     var count: Int = 110
     var type = Type.Ten
-    var width: Int = 0
-    var height: Int = 0
-    var points = ArrayList<Particle>(count)
-
     var from: Int = 0
     var to: Int = 0
     var start: Int = 0
     var color: Int = 0
 
+    private val points = ArrayList<Particle>(count)
     private var totalSpeed: Float = 0f
     private var deltaSpeed: Float = 0.01f
     private var totalRadius: Float = RADIUS_MAX
@@ -49,27 +46,38 @@ class Cycloid : Draw {
     private var lineShiftIndexUpdate: Int = 0
     private var lineTotalIndexUpdate: Int = 0
 
+    private var width: Int = 0
+        get() = if (field > 0) field else throw IllegalStateException("Width must be more than zero")
+
+    private var height: Int = 0
+        get() = if (field > 0) field else throw IllegalStateException("Height must be more than zero")
+
     private val isLineTimeUpdate: Boolean
         get() = System.currentTimeMillis() - lineTimeUpdate > LINE_TIMER
 
-    private val coefficient: Float
+    private val sizeCoefficient: Float
         get() = width.toFloat() / height.toFloat()
 
     private val center: Point
         get() = Point(width / 2, height / 2)
 
     private val radius: PointF
-        get() = PointF(width.toFloat() * totalRadius, height.toFloat() * totalRadius * coefficient)
+        get() = PointF(width.toFloat() * totalRadius, height.toFloat() * totalRadius * sizeCoefficient)
 
     private val linePaint: Paint = Paint().also { paint ->
         paint.color = Color.BLACK
         paint.strokeWidth = 2.0f
     }
 
+    private val testPaint: Paint = Paint().also { paint ->
+        paint.color = Color.RED
+        paint.strokeWidth = 20.0f
+    }
+
     private val particlePaint: Paint = Paint()
 
     init {
-        initParticles()
+//        initParticles()
     }
 
     private fun initParticles() {
@@ -91,6 +99,27 @@ class Cycloid : Draw {
             colorValue += colorStep
             alphaValue = if (alphaValue > 255 / 2) alphaValue - alphaStep else alphaValue
         }
+    }
+
+    private fun setSpeed() {
+        deltaSpeed *= if (totalSpeed > MAX_SPEED || totalSpeed < MIN_SPEED) -1.0f else 1.0f
+        totalSpeed += deltaSpeed
+    }
+
+    private fun setRadius() {
+        deltaRadius *= if (totalRadius > RADIUS_MAX || totalRadius < RADIUS_MIN) -1.0f else 1.0f
+        totalRadius += deltaRadius
+    }
+
+    private fun setParticle(particle: Particle) {
+        particle.x = center.x + radius.x * (cos(particle.delta + totalSpeed) + cos(type.x1 * (particle.delta + totalSpeed)) / type.y1)
+        particle.y = center.y + radius.y * (sin(particle.delta + totalSpeed) + sin(type.x2 * (particle.delta + totalSpeed)) / type.y2)
+    }
+
+    override fun onSizeChanged(width: Int, height: Int) {
+        this.width = width
+        this.height = height
+        initParticles()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -122,27 +151,29 @@ class Cycloid : Draw {
             }
         }
 
-        if (isLineTimeUpdate && lineTotalIndexUpdate <= points.lastIndex) {
+        if (points.size % 2 != 0) {
+            val last = points.last()
+            setParticle(last)
+            last.onDraw(canvas)
+
+            if (points.lastIndex > 0) {
+                val previous = points[points.lastIndex - 1]
+                canvas.drawLine(last.x, last.y, previous.x, previous.y, previous.paint)
+            }
+        }
+
+        if (points.size > 2 && lineTotalIndexUpdate >= points.lastIndex) {
+            val first = points.first()
+            val last = points.last()
+            canvas.drawLine(first.x, first.y, last.x, last.y, testPaint)
+        }
+
+        if (isLineTimeUpdate && lineTotalIndexUpdate < points.lastIndex) {
             lineTimeUpdate = System.currentTimeMillis()
             ++lineTotalIndexUpdate
         }
 
         lineShiftIndexUpdate = if (lineShiftIndexUpdate >= points.lastIndex) 0 else lineShiftIndexUpdate + 1
-    }
-
-    private fun setSpeed() {
-        deltaSpeed *= if (totalSpeed > MAX_SPEED || totalSpeed < MIN_SPEED) -1.0f else 1.0f
-        totalSpeed += deltaSpeed
-    }
-
-    private fun setRadius() {
-        deltaRadius *= if (totalRadius > RADIUS_MAX || totalRadius < RADIUS_MIN) -1.0f else 1.0f
-        totalRadius += deltaRadius
-    }
-
-    private fun setParticle(particle: Particle) {
-        particle.x = center.x + radius.x * (cos(particle.delta + totalSpeed) + cos(type.x1 * (particle.delta + totalSpeed)) / type.y1)
-        particle.y = center.y + radius.y * (sin(particle.delta + totalSpeed) + sin(type.x2 * (particle.delta + totalSpeed)) / type.y2)
     }
 
 }
