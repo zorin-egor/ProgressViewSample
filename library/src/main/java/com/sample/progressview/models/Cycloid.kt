@@ -1,16 +1,16 @@
 package com.sample.progressview.models
 
 import android.graphics.*
+import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
 class Cycloid : Draw {
 
     companion object {
-        private const val MAX_SPEED = Int.MAX_VALUE
-        private const val MIN_SPEED = 0.0f
         private const val LINE_TIMER = 100
-        private const val PARTICLE_DELTA = 0.4f
+        private const val PARTICLES_DELTA = 0.4f
         private const val RADIUS_MAX = 0.35f
         private const val RADIUS_MIN = 0.25f
         private const val RADIUS_DELTA = 0.001f
@@ -37,7 +37,7 @@ class Cycloid : Draw {
     var color: Int = 0
 
     private val points = ArrayList<Particle>(count)
-    private var totalSpeed: Float = 0f
+    private var totalSpeed: Float = 0.0f
     private var deltaSpeed: Float = 0.01f
     private var totalRadius: Float = RADIUS_MAX
     private var deltaRadius: Float = RADIUS_DELTA
@@ -62,7 +62,11 @@ class Cycloid : Draw {
         get() = Point(width / 2, height / 2)
 
     private val radius: PointF
-        get() = PointF(width.toFloat() * totalRadius, height.toFloat() * totalRadius * sizeCoefficient)
+        get() = if (sizeCoefficient > 1.0) {
+            PointF(width.toFloat() * totalRadius / sizeCoefficient, height.toFloat() * totalRadius)
+        } else {
+            PointF(width.toFloat() * totalRadius, height.toFloat() * totalRadius * sizeCoefficient)
+        }
 
     private val linePaint: Paint = Paint().also { paint ->
         paint.color = Color.BLACK
@@ -76,11 +80,7 @@ class Cycloid : Draw {
 
     private val particlePaint: Paint = Paint()
 
-    init {
-//        initParticles()
-    }
-
-    private fun initParticles() {
+    private fun setParticles() {
         var delta = 0.0f
         val colorStep = 255 / count
         var colorValue = 0
@@ -95,14 +95,14 @@ class Cycloid : Draw {
                 }
             ).also(::setParticle))
 
-            delta += PARTICLE_DELTA
+            delta += PARTICLES_DELTA
             colorValue += colorStep
             alphaValue = if (alphaValue > 255 / 2) alphaValue - alphaStep else alphaValue
         }
     }
 
     private fun setSpeed() {
-        deltaSpeed *= if (totalSpeed > MAX_SPEED || totalSpeed < MIN_SPEED) -1.0f else 1.0f
+        if (abs(totalSpeed - 2 * PI) < 0.001) totalSpeed = 0.0f
         totalSpeed += deltaSpeed
     }
 
@@ -119,7 +119,7 @@ class Cycloid : Draw {
     override fun onSizeChanged(width: Int, height: Int) {
         this.width = width
         this.height = height
-        initParticles()
+        setParticles()
     }
 
     override fun onDraw(canvas: Canvas) {

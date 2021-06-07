@@ -3,6 +3,7 @@ package com.sample.progressview
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.View
 import com.sample.progressview.models.Cycloid
@@ -18,6 +19,10 @@ class ProgressView : View {
     }
 
     private val particles = Cycloid()
+
+    init {
+        if (id == NO_ID) throw IllegalArgumentException("You must set the id to work correctly")
+    }
 
     constructor(context: Context) : this(context, null)
 
@@ -35,16 +40,22 @@ class ProgressView : View {
             }
     }
 
+    override fun onSaveInstanceState(): Parcelable? {
+        return super.onSaveInstanceState()
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        super.onRestoreInstanceState(state)
+    }
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         particles.onSizeChanged(w, h)
     }
 
     override fun onDraw(canvas: Canvas?) {
-        canvas?.let {
-            particles.onDraw(it)
-//            invalidate()
-            postInvalidateDelayed(10)
-        }
+        canvas?.let(particles::onDraw)
+//        invalidate()
+        postInvalidateDelayed(10)
     }
 }

@@ -7,6 +7,7 @@
     tools:context=".MainActivity">
 
     <com.sample.progressview.ProgressView
+        android:id="@+id/progressView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:fromProgress="1"
