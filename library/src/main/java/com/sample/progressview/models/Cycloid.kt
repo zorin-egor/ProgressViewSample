@@ -78,8 +78,6 @@ class Cycloid : Draw {
         paint.strokeWidth = 20.0f
     }
 
-    private val particlePaint: Paint = Paint()
-
     private fun setParticles() {
         var delta = 0.0f
         val colorStep = 255 / count
