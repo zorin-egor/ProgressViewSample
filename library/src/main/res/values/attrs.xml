@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="ProgressView">
-        <attr name="startProgress" format="integer" />
-        <attr name="fromProgress" format="integer" />
-        <attr name="toProgress" format="integer" />
-        <attr name="colorProgress" format="color" />
+        <attr name="start_progress" format="integer" />
+        <attr name="from_progress" format="integer" />
+        <attr name="to_progress" format="integer" />
+        <attr name="count_down" format="boolean" />
+        <attr name="color_random_background" format="boolean" />
+        <attr name="color_background" format="color" />
+        <attr name="color_progress" format="color" />
+        <attr name="type_progress" format="enum">
+            <enum name="one" value="0"/>
+            <enum name="two" value="1"/>
+            <enum name="three" value="2"/>
+            <enum name="four" value="3"/>
+        </attr>
     </declare-styleable>
 </resources>

@@ -1,9 +1,10 @@
-package com.sample.progressview.models
+package com.sample.progressview.models.particle
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.sample.progressview.models.Draw
 
-data class Particle(
+internal data class Particle(
     var x: Float = 0.0f,
     var y: Float = 0.0f,
     var radius: Float = 10.0f,
@@ -14,4 +15,5 @@ data class Particle(
     override fun onDraw(canvas: Canvas) {
         canvas.drawCircle(x, y, radius, paint)
     }
+
 }
