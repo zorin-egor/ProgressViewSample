@@ -5,11 +5,11 @@ import android.graphics.Paint
 import com.sample.progressview.models.Draw
 
 internal data class Particle(
-    var x: Float = 0.0f,
-    var y: Float = 0.0f,
-    var radius: Float = 10.0f,
-    val delta: Float = 0.0f,
-    val paint: Paint
+    var x: Float,
+    var y: Float,
+    var radius: Float,
+    val delta: Float,
+    var paint: Paint
 ) : Draw {
 
     override fun onDraw(canvas: Canvas) {

@@ -11,43 +11,42 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 internal class Cycloid(
-    private val type: Cycloid.Type,
-    private val from: Int,
-    private val to: Int,
-    private val start: Int,
-    private val isBackgroundColorRandom: Boolean,
-    private val isCountDown: Boolean,
-    private @ColorInt var backgroundColor: Int = Color.TRANSPARENT,
-    private @ColorInt var progressColor: Int = Color.TRANSPARENT
+    private val type: Type,
+    private val lineWidth: Int,
+    private val particleRadius: Int,
+    private val start: Int = 0,
+    private val to: Int = 100,
+    private val from: Int = start,
+    private val isBackgroundColorRandom: Boolean = false,
+    private val isCountDown: Boolean = false,
+    private val isDynamicRadius: Boolean = true,
+    @ColorInt private val backgroundColor: Int = Color.LTGRAY,
+    @ColorInt private val progressColor: Int = Color.DKGRAY
 ) : Draw {
 
     companion object {
-        private const val COUNT = 110
         private const val LINE_TIMER = 100
         private const val PARTICLES_DELTA = 0.4f
-        private const val RADIUS_MAX = 0.35f
-        private const val RADIUS_MIN = 0.25f
+        private const val RADIUS_MAX = 0.30f
+        private const val RADIUS_MIN = 0.20f
         private const val RADIUS_DELTA = 0.001f
         private const val ALPHA_START = 255
         private const val COLOR_STEP = 1
         private const val DELTA_SPEED = 0.01f
+        private const val LINE_WIDTH_FACTOR = 2.0f
+        private const val PARTICLE_RADIUS_FACTOR = 1.5f
     }
 
-    enum class Type(val x1: Float, val y1: Float, val x2: Float, val y2: Float) {
-        One(4.938000f, 2.456000f, 4.593000f, 4.913000f),
-        Two(1.286000f, 4.242000f, 1.286000f, 4.242000f), // +
-        Three(4.283176f, 3.518178f, 3.683177f, 3.668177f),
-        Four(2.150000f, 2.299000f, 2.150000f, 2.299000f),
-        Five(4.066366f, 3.216887f, 3.216887f, 4.066366f),
-        Six(3.104000f, 4.681000f, 3.104000f, 4.681000f), // +
-        Seven(3.019000f, 2.913000f, 3.019000f, 2.913000f), // +
-        Eight(3.216887f, 4.066366f, 3.216887f, 4.066366f), // +
-        Nine(1.870000f, 2.955000f, 0.935000f, 3.385000f), // +
-        Ten(4.216887f, 4.216887f, 5.066366f, 5.066366f),
+    enum class Type(val x1: Float, val y1: Float, val x2: Float, val y2: Float, val count: Int) {
+        One(1.286000f, 4.242000f, 1.286000f, 4.242000f, 110),
+        Two(4.283176f, 3.518178f, 3.683177f, 3.668177f, 110),
+        Three(2.150000f, 2.299000f, 2.150000f, 2.299000f, 110),
+        Four(3.216887f, 4.066366f, 3.216887f, 4.066366f, 63),
+        Five(1.745000f, 1.575000f, 1.745000f, 1.575000f, 63),
     }
 
-    private val points = ArrayList<Particle>(COUNT)
-    private var totalSpeed: Float = 0.0f
+    private val points = ArrayList<Particle>(type.count)
+    private var totalSpeed: Float = 0f
     private var deltaSpeed: Float = DELTA_SPEED
     private var totalRadius: Float = RADIUS_MAX
     private var deltaRadius: Float = RADIUS_DELTA
@@ -76,19 +75,19 @@ internal class Cycloid(
             PointF(width.toFloat() * totalRadius, height.toFloat() * totalRadius * sizeCoefficient)
         }
 
-    private val progressPaint: Paint = Paint().also { paint ->
-        paint.color = progressColor
-        paint.strokeWidth = 4.0f
+    private val backgroundPaint: Paint = Paint().apply {
+        color = backgroundColor
+        strokeWidth = lineWidth.toFloat()
     }
 
-    private val headProgressPaint: Paint = Paint().also { paint ->
-        paint.color = Color.RED
-        paint.strokeWidth = 10.0f
+    private val progressPaint: Paint = Paint().apply {
+        color = if (isCountDown) Color.TRANSPARENT else progressColor
+        strokeWidth = lineWidth * LINE_WIDTH_FACTOR
     }
 
-    private val testPaint: Paint = Paint().also { paint ->
-        paint.color = Color.RED
-        paint.strokeWidth = 20.0f
+    private val testPaint: Paint = Paint().apply {
+        color = Color.RED
+        strokeWidth = 20.0f
     }
 
     private fun setParticles() {
@@ -98,11 +97,15 @@ internal class Cycloid(
         val colorStep = COLOR_STEP
         val alphaStep = COLOR_STEP
 
-        (0 until COUNT).forEach { index ->
+        (0 until type.count).forEach { index ->
             points.add(Particle(
+                x = 0.0f, y = 0.0f,
+                radius = particleRadius.toFloat(),
                 delta = delta,
-                paint = Paint().apply {
+                paint = if (isBackgroundColorRandom) Paint().apply {
                     this.color = Color.argb(alphaValue, 170, colorValue, 128)
+                } else {
+                    backgroundPaint
                 }
             ).also(::setParticleXY))
 
@@ -118,8 +121,10 @@ internal class Cycloid(
     }
 
     private fun setRadius() {
-        deltaRadius *= if (totalRadius > RADIUS_MAX || totalRadius < RADIUS_MIN) -1.0f else 1.0f
-        totalRadius += deltaRadius
+        if (isDynamicRadius) {
+            deltaRadius *= if (totalRadius > RADIUS_MAX || totalRadius < RADIUS_MIN) -1.0f else 1.0f
+            totalRadius += deltaRadius
+        }
     }
 
     @Suppress("NOTHING_TO_INLINE")
@@ -138,6 +143,15 @@ internal class Cycloid(
     }
 
     private fun draw(canvas: Canvas) {
+        // Draw close line under first
+        if (points.size > 2) {
+            canvas.drawLine(points.first().x, points.first().y, points.last().x, points.last().y, points.last().paint)
+            if (indexProgress >= points.lastIndex) {
+                canvas.drawLine(points.first().x, points.first().y, points.last().x, points.last().y, progressPaint)
+            }
+        }
+
+        // Draw main particles and lines
         points.forEachIndexed { index, particle ->
             setParticleXY(particle)
             particle.onDraw(canvas)
@@ -162,17 +176,15 @@ internal class Cycloid(
 //                        previous.paint.color, particle.paint.color,
 //                        Shader.TileMode.CLAMP
 //                    )
-                    particle.paint.set(progressPaint)
+                    previous.paint = progressPaint
+                    previous.radius = particleRadius * PARTICLE_RADIUS_FACTOR
+                    previous.onDraw(canvas)
+                    particle.paint = progressPaint
+                    particle.radius = particleRadius * PARTICLE_RADIUS_FACTOR
                     particle.onDraw(canvas)
                     canvas.drawLine(previous.x, previous.y, particle.x, particle.y, progressPaint)
                 }
             }
-        }
-
-        // Draw close line
-        if (points.size > 2 && indexProgress >= points.lastIndex) {
-            points.first().paint.set(progressPaint)
-            canvas.drawLine(points.first().x, points.first().y, points.last().x, points.last().y, progressPaint)
         }
     }
 
