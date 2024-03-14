@@ -1,6 +1,12 @@
 package com.sample.progressview.models.cycloid
 
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Point
+import android.graphics.PointF
+import android.graphics.Shader
 import android.os.Parcelable
 import androidx.annotation.ColorInt
 import com.sample.progressview.models.Draw
@@ -41,8 +47,8 @@ internal class Cycloid(
         One(1.286000f, 4.242000f, 1.286000f, 4.242000f, 110),
         Two(4.283176f, 3.518178f, 3.683177f, 3.668177f, 110),
         Three(2.150000f, 2.299000f, 2.150000f, 2.299000f, 110),
-        Four(3.216887f, 4.066366f, 3.216887f, 4.066366f, 63),
-        Five(1.745000f, 1.575000f, 1.745000f, 1.575000f, 63),
+        Four(3.216887f, 4.066366f, 3.216887f, 4.066366f, 110),
+        Five(1.745000f, 1.575000f, 1.745000f, 1.575000f, 110),
     }
 
     private val points = ArrayList<Particle>(type.count)
@@ -194,7 +200,7 @@ internal class Cycloid(
         setParticles()
     }
 
-    override fun onSave(): Parcelable? {
+    override fun onSave(): Parcelable {
         return CycloidState(
             totalSpeed = totalSpeed,
             deltaSpeed = deltaSpeed,

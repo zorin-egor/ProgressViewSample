@@ -50,7 +50,7 @@ class ProgressView : View {
                 isBackgroundColorRandom = it.getBoolean(R.styleable.ProgressView_color_random_background, isBackgroundColorRandom)
                 isCountDown = it.getBoolean(R.styleable.ProgressView_count_down, isCountDown)
                 isDynamicRadius = it.getBoolean(R.styleable.ProgressView_dynamic_radius, isDynamicRadius)
-                type = Cycloid.Type.values()
+                type = Cycloid.Type.entries
                     .getOrNull(it.getInt(R.styleable.ProgressView_type_progress, Cycloid.Type.One.ordinal))
                     ?: type
                 it.recycle()
