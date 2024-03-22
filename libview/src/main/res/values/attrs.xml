@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="ProgressView">
-        <attr name="start_progress" format="integer" />
-        <attr name="to_progress" format="integer" />
         <attr name="from_progress" format="integer" />
-        <attr name="line_width" format="dimension" />
-        <attr name="particle_radius" format="dimension" />
-        <attr name="count_down" format="boolean" />
-        <attr name="color_random_background" format="boolean" />
+        <attr name="to_progress" format="integer" />
+        <attr name="line_width" format="integer" />
+        <attr name="particle_radius" format="integer" />
+        <attr name="dynamic_color" format="boolean" />
         <attr name="dynamic_radius" format="boolean" />
+        <attr name="dynamic_shape" format="boolean" />
         <attr name="color_background" format="color" />
+        <attr name="color_shape" format="color" />
         <attr name="color_progress" format="color" />
         <attr name="type_progress" format="enum">
             <enum name="one" value="0"/>

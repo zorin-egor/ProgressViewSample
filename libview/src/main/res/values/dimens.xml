@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="progress_view_particle_radius">4dp</dimen>
+    <dimen name="progress_view_circle_radius">4dp</dimen>
     <dimen name="progress_view_line_width">1dp</dimen>
     <integer name="progress_view_from">0</integer>
     <integer name="progress_view_to">100</integer>
     <integer name="progress_view_start">@integer/progress_view_from</integer>
-    <bool name="progress_view_color_random_background">false</bool>
-    <bool name="progress_view_count_down">false</bool>
     <bool name="progress_view_dynamic_radius">true</bool>
+    <bool name="progress_view_dynamic_color">true</bool>
 </resources>

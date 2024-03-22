@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="progress_view_background">@android:color/holo_blue_light</color>
+    <color name="progress_view_background">@android:color/white</color>
     <color name="progress_view_progress">@android:color/holo_red_light</color>
+    <color name="progress_view_default">@android:color/holo_blue_light</color>
 </resources>

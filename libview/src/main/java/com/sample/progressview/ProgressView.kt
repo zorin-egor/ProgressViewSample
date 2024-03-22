@@ -6,13 +6,22 @@ import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
-import com.sample.progressview.models.Draw
+import com.sample.progressview.models.Shape
 import com.sample.progressview.models.cycloid.Cycloid
+import com.sample.progressview.models.cycloid.CycloidColors
+import com.sample.progressview.models.cycloid.getFiveTypeCycloid
+import com.sample.progressview.models.cycloid.getFourTypeCycloid
+import com.sample.progressview.models.cycloid.getOneTypeCycloid
+import com.sample.progressview.models.cycloid.getThreeTypeCycloid
+import com.sample.progressview.models.cycloid.getTwoTypeCycloid
+import com.sample.progressview.models.toColorModel
 
 
 class ProgressView : View {
 
-    private val cycloid: Draw
+    var isShapeDynamic: Boolean = true
+
+    private var shape: Shape
 
     init {
         if (id == NO_ID) throw IllegalArgumentException("You must set the id to work correctly")
@@ -27,58 +36,70 @@ class ProgressView : View {
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes) {
         var lineWidth = context.resources.getDimensionPixelSize(R.dimen.progress_view_line_width)
-        var particleRadius = context.resources.getDimensionPixelSize(R.dimen.progress_view_particle_radius)
-        var start = context.resources.getInteger(R.integer.progress_view_start)
+        var particleRadius = context.resources.getDimensionPixelSize(R.dimen.progress_view_circle_radius)
         var to = context.resources.getInteger(R.integer.progress_view_to)
         var from = context.resources.getInteger(R.integer.progress_view_from)
         var backgroundColor = ContextCompat.getColor(context, R.color.progress_view_background)
+        var defaultColor = ContextCompat.getColor(context, R.color.progress_view_default)
         var progressColor = ContextCompat.getColor(context, R.color.progress_view_progress)
-        var isBackgroundColorRandom = context.resources.getBoolean(R.bool.progress_view_color_random_background)
-        var isCountDown = context.resources.getBoolean(R.bool.progress_view_count_down)
         var isDynamicRadius = context.resources.getBoolean(R.bool.progress_view_dynamic_radius)
-        var type = Cycloid.Type.One
+        var isDynamicColor = true
+        var type = 0
 
         attrs?.let { context.obtainStyledAttributes(attrs, R.styleable.ProgressView) }
             ?.also {
-                lineWidth = it.getDimensionPixelSize(R.styleable.ProgressView_line_width, lineWidth)
-                particleRadius = it.getDimensionPixelSize(R.styleable.ProgressView_particle_radius, particleRadius)
-                start = it.getInt(R.styleable.ProgressView_start_progress, start)
+                lineWidth = it.getInt(R.styleable.ProgressView_line_width, lineWidth)
+                particleRadius = it.getInt(R.styleable.ProgressView_particle_radius, particleRadius)
                 to = it.getInt(R.styleable.ProgressView_to_progress, to)
                 from = it.getInt(R.styleable.ProgressView_from_progress, from)
                 backgroundColor = it.getInt(R.styleable.ProgressView_color_background, backgroundColor)
                 progressColor = it.getInt(R.styleable.ProgressView_color_progress, progressColor)
-                isBackgroundColorRandom = it.getBoolean(R.styleable.ProgressView_color_random_background, isBackgroundColorRandom)
-                isCountDown = it.getBoolean(R.styleable.ProgressView_count_down, isCountDown)
+                defaultColor = it.getInt(R.styleable.ProgressView_color_shape, defaultColor)
                 isDynamicRadius = it.getBoolean(R.styleable.ProgressView_dynamic_radius, isDynamicRadius)
-                type = Cycloid.Type.entries
-                    .getOrNull(it.getInt(R.styleable.ProgressView_type_progress, Cycloid.Type.One.ordinal))
-                    ?: type
+                isDynamicColor = it.getBoolean(R.styleable.ProgressView_dynamic_color, isDynamicColor)
+                isShapeDynamic = it.getBoolean(R.styleable.ProgressView_dynamic_shape, isShapeDynamic)
+                type = it.getInt(R.styleable.ProgressView_type_progress, 0)
                 it.recycle()
             }
 
-        cycloid = Cycloid(
-            type = type,
-            lineWidth = lineWidth,
-            particleRadius = particleRadius,
-            start = start,
-            to = to,
-            from = from,
-            isBackgroundColorRandom = isBackgroundColorRandom,
-            isCountDown = isCountDown,
-            isDynamicRadius = isDynamicRadius,
-            backgroundColor = backgroundColor,
-            progressColor = progressColor
-        )
+        shape = when(type) {
+            in 0 .. 4 -> {
+                val colors = CycloidColors(
+                    backgroundColor = backgroundColor.toColorModel,
+                    defaultColor = defaultColor.toColorModel,
+                    progressColor = progressColor.toColorModel
+                )
+
+                val shapeModel = when(type) {
+                    0 -> getOneTypeCycloid(colors = colors, lineWidth = lineWidth.toFloat(), particleRadius = particleRadius.toFloat())
+                    1 -> getTwoTypeCycloid(colors = colors, lineWidth = lineWidth.toFloat(), particleRadius = particleRadius.toFloat())
+                    2 -> getThreeTypeCycloid(colors = colors, lineWidth = lineWidth.toFloat(), particleRadius = particleRadius.toFloat())
+                    3 -> getFourTypeCycloid(colors = colors, lineWidth = lineWidth.toFloat(), particleRadius = particleRadius.toFloat())
+                    4 -> getFiveTypeCycloid(colors = colors, lineWidth = lineWidth.toFloat(), particleRadius = particleRadius.toFloat())
+                    else -> getOneTypeCycloid(colors = colors, lineWidth = lineWidth.toFloat(), particleRadius = particleRadius.toFloat())
+                }
+
+                Cycloid(
+                    model = shapeModel,
+                    fromProgress = from,
+                    toProgress = to,
+                    isRadiusDynamic = isDynamicRadius,
+                    isShapeDynamic = isShapeDynamic,
+                    isColorDynamic = isDynamicColor
+                )
+            }
+            else -> throw IllegalArgumentException("Unknown shape type")
+        }
     }
 
     override fun onSaveInstanceState(): Parcelable {
-        return ProgressViewState(super.onSaveInstanceState(), cycloid.onSave())
+        return ProgressViewState(super.onSaveInstanceState(), shape.onSave())
     }
 
     override fun onRestoreInstanceState(state: Parcelable?) {
         super.onRestoreInstanceState(when(state) {
             is ProgressViewState -> {
-                cycloid.onRestore(state.state)
+                shape.onRestore(state.state)
                 state.parcelable
             }
             else -> state
@@ -87,11 +108,24 @@ class ProgressView : View {
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        cycloid.onSizeChanged(w, h)
+        shape.onSizeChanged(w, h)
     }
 
     override fun onDraw(canvas: Canvas?) {
-        canvas?.let(cycloid::onDraw)
-        postInvalidateDelayed(10)
+        canvas?.let(shape::onDraw)
+        if (isShapeDynamic) {
+            postInvalidateDelayed(10)
+        }
     }
+
+    fun setShape(shape: Shape) {
+        shape.onSizeChanged(width, height)
+        invalidate()
+    }
+
+    fun setProgress(progress: Int) {
+        shape.setProgress(progress)
+        invalidate()
+    }
+
 }

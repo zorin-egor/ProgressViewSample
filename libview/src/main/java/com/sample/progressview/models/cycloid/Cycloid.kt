@@ -1,34 +1,29 @@
 package com.sample.progressview.models.cycloid
 
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Point
 import android.graphics.PointF
-import android.graphics.Shader
 import android.os.Parcelable
-import androidx.annotation.ColorInt
-import com.sample.progressview.models.Draw
+import com.sample.progressview.models.ColorModel
+import com.sample.progressview.models.Shape
 import com.sample.progressview.models.particle.Particle
+import com.sample.progressview.models.toIntColor
+import java.lang.Float.max
+import java.lang.Float.min
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
-internal class Cycloid(
-    private val type: Type,
-    private val lineWidth: Int,
-    private val particleRadius: Int,
-    private val start: Int = 0,
-    private val to: Int = 100,
-    private val from: Int = start,
-    private val isBackgroundColorRandom: Boolean = false,
-    private val isCountDown: Boolean = false,
-    private val isDynamicRadius: Boolean = true,
-    @ColorInt private val backgroundColor: Int = Color.LTGRAY,
-    @ColorInt private val progressColor: Int = Color.DKGRAY
-) : Draw {
+class Cycloid(
+    private var model: CycloidModel,
+    private var fromProgress: Int = 0,
+    private var toProgress: Int = 100,
+    private var isShapeDynamic: Boolean = true,
+    private var isColorDynamic: Boolean = true,
+    private var isRadiusDynamic: Boolean = false,
+) : Shape {
 
     companion object {
         private const val LINE_TIMER = 100
@@ -36,28 +31,16 @@ internal class Cycloid(
         private const val RADIUS_MAX = 0.30f
         private const val RADIUS_MIN = 0.20f
         private const val RADIUS_DELTA = 0.001f
-        private const val ALPHA_START = 255
-        private const val COLOR_STEP = 1
         private const val DELTA_SPEED = 0.01f
-        private const val LINE_WIDTH_FACTOR = 2.0f
-        private const val PARTICLE_RADIUS_FACTOR = 1.5f
     }
 
-    enum class Type(val x1: Float, val y1: Float, val x2: Float, val y2: Float, val count: Int) {
-        One(1.286000f, 4.242000f, 1.286000f, 4.242000f, 110),
-        Two(4.283176f, 3.518178f, 3.683177f, 3.668177f, 110),
-        Three(2.150000f, 2.299000f, 2.150000f, 2.299000f, 110),
-        Four(3.216887f, 4.066366f, 3.216887f, 4.066366f, 110),
-        Five(1.745000f, 1.575000f, 1.745000f, 1.575000f, 110),
-    }
-
-    private val points = ArrayList<Particle>(type.count)
+    private val points = ArrayList<Particle>(toProgress)
     private var totalSpeed: Float = 0f
     private var deltaSpeed: Float = DELTA_SPEED
     private var totalRadius: Float = RADIUS_MAX
     private var deltaRadius: Float = RADIUS_DELTA
     private var timeProgress: Long = 0
-    private var indexProgress: Int = 0
+    private var indexProgress: Int = fromProgress
 
     private var width: Int = 0
         get() = if (field > 0) field else throw IllegalStateException("Width must be more than zero")
@@ -81,43 +64,46 @@ internal class Cycloid(
             PointF(width.toFloat() * totalRadius, height.toFloat() * totalRadius * sizeCoefficient)
         }
 
+    private val particleColor: ColorModel get() = model.colors.particleDefaultColor
+
+    private val lineColor: ColorModel get() = model.colors.lineDefaultColor
+
+    private val particleProgressColor: ColorModel get() = model.colors.particleProgressColor
+
+    private val lineProgressColor: ColorModel get() = model.colors.lineProgressColor
+
+
     private val backgroundPaint: Paint = Paint().apply {
-        color = backgroundColor
-        strokeWidth = lineWidth.toFloat()
+        color = model.colors.backgroundColor.toIntColor
     }
 
-    private val progressPaint: Paint = Paint().apply {
-        color = if (isCountDown) Color.TRANSPARENT else progressColor
-        strokeWidth = lineWidth * LINE_WIDTH_FACTOR
+    private val linePaint: Paint = Paint().apply {
+        color = lineColor.toIntColor
+        strokeWidth = model.lineWidth
     }
 
-    private val testPaint: Paint = Paint().apply {
-        color = Color.RED
-        strokeWidth = 20.0f
+    private val particlePaint: Paint = Paint().apply {
+        color = particleColor.toIntColor
     }
 
     private fun setParticles() {
         var delta = 0.0f
-        var colorValue = 255
-        var alphaValue = ALPHA_START
-        val colorStep = COLOR_STEP
-        val alphaStep = COLOR_STEP
 
-        (0 until type.count).forEach { index ->
+        (0 until toProgress).forEach { index ->
+            val particleColor = particleColor.addToRGBDynamic(
+                factor = index.toFloat() / toProgress,
+                isAlphaChannelAddOrSub = false
+            )
+
+            particlePaint.color = particleColor.toIntColor
             points.add(Particle(
                 x = 0.0f, y = 0.0f,
-                radius = particleRadius.toFloat(),
+                radius = model.particleRadius,
                 delta = delta,
-                paint = if (isBackgroundColorRandom) Paint().apply {
-                    this.color = Color.argb(alphaValue, 170, colorValue, 128)
-                } else {
-                    backgroundPaint
-                }
+                paint = particlePaint
             ).also(::setParticleXY))
 
             delta += PARTICLES_DELTA
-            colorValue += if (colorValue > 255 / 2) colorValue - colorStep else colorValue
-            alphaValue = if (alphaValue > 255 / 2) alphaValue - alphaStep else alphaValue
         }
     }
 
@@ -127,7 +113,7 @@ internal class Cycloid(
     }
 
     private fun setRadius() {
-        if (isDynamicRadius) {
+        if (isRadiusDynamic) {
             deltaRadius *= if (totalRadius > RADIUS_MAX || totalRadius < RADIUS_MIN) -1.0f else 1.0f
             totalRadius += deltaRadius
         }
@@ -136,61 +122,68 @@ internal class Cycloid(
     @Suppress("NOTHING_TO_INLINE")
     private inline fun setParticleXY(particle: Particle) {
         particle.x = center.x + radius.x * (cos(particle.delta + totalSpeed) +
-                cos(type.x1 * (particle.delta + totalSpeed)) / type.y1)
+                cos(model.x1 * (particle.delta + totalSpeed)) / model.y1)
         particle.y = center.y + radius.y * (sin(particle.delta + totalSpeed) +
-                sin(type.x2 * (particle.delta + totalSpeed)) / type.y2)
+                sin(model.x2 * (particle.delta + totalSpeed)) / model.y2)
     }
 
     private fun setProgress() {
         if (isTimeProgress && indexProgress < points.lastIndex) {
             timeProgress = System.currentTimeMillis()
-            ++indexProgress
+            if (isShapeDynamic) {
+                ++indexProgress
+            }
         }
     }
 
     private fun draw(canvas: Canvas) {
+        canvas.drawRect(0.0f, 0.0f, width.toFloat(), height.toFloat(), backgroundPaint)
+
         // Draw close line under first
         if (points.size > 2) {
-            canvas.drawLine(points.first().x, points.first().y, points.last().x, points.last().y, points.last().paint)
-            if (indexProgress >= points.lastIndex) {
-                canvas.drawLine(points.first().x, points.first().y, points.last().x, points.last().y, progressPaint)
-            }
+            val lineColor = if (indexProgress >= points.lastIndex)
+                lineProgressColor.addToRGBDynamic(factor = 1.0f, isAlphaChannelAddOrSub = false)
+                    else lineColor.addToRGBDynamic(factor = 1.0f)
+
+            linePaint.color = lineColor.toIntColor
+
+            canvas.drawLine(
+                points.first().x, points.first().y,
+                points.last().x, points.last().y,
+                linePaint
+            )
         }
 
         // Draw main particles and lines
         points.forEachIndexed { index, particle ->
             setParticleXY(particle)
-            particle.onDraw(canvas)
 
-            if (index > 0) {
-                // Draw connect line
-                val previous = points[index - 1]
-                previous.paint.strokeWidth = 5.0f
-                previous.paint.shader = LinearGradient(
-                    previous.x, previous.y,
-                    particle.x, particle.y,
-                    previous.paint.color, particle.paint.color,
-                    Shader.TileMode.CLAMP
+            val factor = index.toFloat() / toProgress
+            val radius = model.particleRadius
+            var particleColor = particleColor.addToRGBDynamic(factor = factor)
+            var lineColor = lineColor.addToRGBDynamic(factor = factor)
+
+            if (index in 0..indexProgress) {
+                particleColor = particleProgressColor.addToRGBDynamic(
+                    factor = factor * 0.5f,
+                    isAlphaChannelAddOrSub = false
                 )
-                canvas.drawLine(previous.x, previous.y, particle.x, particle.y, previous.paint)
-
-                // Draw progress
-                if (index in 1..indexProgress) {
-//                    progressPaint.shader = LinearGradient(
-//                        previous.x, previous.y,
-//                        particle.x, particle.y,
-//                        previous.paint.color, particle.paint.color,
-//                        Shader.TileMode.CLAMP
-//                    )
-                    previous.paint = progressPaint
-                    previous.radius = particleRadius * PARTICLE_RADIUS_FACTOR
-                    previous.onDraw(canvas)
-                    particle.paint = progressPaint
-                    particle.radius = particleRadius * PARTICLE_RADIUS_FACTOR
-                    particle.onDraw(canvas)
-                    canvas.drawLine(previous.x, previous.y, particle.x, particle.y, progressPaint)
-                }
+                lineColor = lineProgressColor.addToRGBDynamic(
+                    factor = factor * 0.5f,
+                    isAlphaChannelAddOrSub = false
+                )
             }
+
+            if (index < points.lastIndex) {
+                linePaint.color = lineColor.toIntColor
+                val next = points[index + 1]
+                canvas.drawLine(next.x, next.y, particle.x, particle.y, linePaint)
+            }
+
+            particlePaint.color = particleColor.toIntColor
+            particle.paint = particlePaint
+            particle.radius = radius
+            particle.onDraw(canvas)
         }
     }
 
@@ -202,24 +195,43 @@ internal class Cycloid(
 
     override fun onSave(): Parcelable {
         return CycloidState(
+            shapeModel = model,
             totalSpeed = totalSpeed,
             deltaSpeed = deltaSpeed,
             totalRadius = totalRadius,
             deltaRadius = deltaRadius,
             timeProgress = timeProgress,
-            indexProgress = indexProgress
+            indexProgress = indexProgress,
+            fromProgress = fromProgress,
+            toProgress = toProgress,
+            isShapeDynamic = isShapeDynamic,
+            isColorDynamic = isColorDynamic,
+            isRadiusDynamic = isRadiusDynamic
         )
     }
 
     override fun onRestore(state: Parcelable?) {
         if (state is CycloidState) {
+            model = state.shapeModel as CycloidModel
             totalSpeed = state.totalSpeed
             deltaSpeed = state.deltaSpeed
             totalRadius = state.totalRadius
             deltaRadius = state.deltaRadius
             timeProgress = state.timeProgress
             indexProgress = state.indexProgress
+            fromProgress = state.fromProgress
+            toProgress = state.toProgress
+            isShapeDynamic = state.isShapeDynamic
+            isColorDynamic = state.isColorDynamic
+            isRadiusDynamic = state.isRadiusDynamic
         }
+    }
+
+    override fun setProgress(value: Int) {
+        if (value == indexProgress || value !in 0..toProgress) {
+            return
+        }
+        indexProgress = value
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -227,6 +239,31 @@ internal class Cycloid(
         setRadius()
         draw(canvas)
         setProgress()
+    }
+
+    private inline fun ColorModel.addToRGB(factor: Float, isAlphaChannelAddOrSub: Boolean? = null): ColorModel {
+        val newRed = min(max(red + (255.0f - red) * factor, 0.0f), 255.0f)
+        val newGreen = min(max(green + (255.0f - green) * factor, 0.0f), 255.0f)
+        val newBlue = min(max( blue + (255.0f - blue) * factor, 0.0f), 255.0f)
+
+        val newAlpha = when(isAlphaChannelAddOrSub) {
+            true -> min(max( alpha + (255.0f - alpha) * factor, 0.0f), 255.0f)
+            false -> min(max( alpha * (255.0f - factor), 0.0f), 255.0f)
+            else -> alpha
+        }
+
+        return ColorModel(
+            red = newRed.toInt(),
+            green = newGreen.toInt(),
+            blue = newBlue.toInt(),
+            alpha = newAlpha.toInt()
+        )
+    }
+
+    private inline fun ColorModel.addToRGBDynamic(factor: Float, isAlphaChannelAddOrSub: Boolean? = null): ColorModel {
+        return if (isColorDynamic)
+            addToRGB(factor = factor, isAlphaChannelAddOrSub = isAlphaChannelAddOrSub) else
+            this
     }
 
 }
