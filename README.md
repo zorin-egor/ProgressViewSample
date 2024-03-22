@@ -5,6 +5,6 @@
 ## Screenshots
 <p align="center">
   <a>
-    <img alt="ProgressView" src="https://github.com/zorin-egor/ProgressViewSample/assets/13707343/414f308f-f2bc-4843-9acc-b1a078a2a312" />
+    <img alt="ProgressView" src="https://github.com/zorin-egor/ProgressViewSample/assets/13707343/5fb5f838-9037-4382-9285-8df2de276df7" />
   </a>
 </p>
