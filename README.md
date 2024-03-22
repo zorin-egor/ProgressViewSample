@@ -1,10 +1,10 @@
-# Coroutine vs RxJava
+# ProgressView
 
 <b>ProgressView</b> - sample app for custom view.
 
 ## Screenshots
 <p align="center">
   <a>
-    <img alt="ProgressView" src="https://github.com/zorin-egor/ProgressViewSample/assets/13707343/2e52e740-5d61-4e52-9022-6f1b41aa5ea5" />
+    <img alt="ProgressView" src="https://github.com/zorin-egor/ProgressViewSample/assets/13707343/414f308f-f2bc-4843-9acc-b1a078a2a312" />
   </a>
 </p>
