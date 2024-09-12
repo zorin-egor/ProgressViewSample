@@ -89,7 +89,7 @@ class Cycloid(
     private fun setParticles() {
         var delta = 0.0f
 
-        (0 until toProgress).forEach { index ->
+        repeat(toProgress) { index ->
             val particleColor = particleColor.addToRGBDynamic(
                 factor = index.toFloat() / toProgress,
                 isAlphaChannelAddOrSub = false
